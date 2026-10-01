@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d18">
+  <meta name="description" content="SynthoCrowd configure des personas, lance des agents sur une interface et rassemble leurs parcours dans un rapport UX.">
+  <title>SynthoCrowd — Présentation</title>
+  <link rel="preload" href="./assets/space-grotesk.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#purpose">Aller à la présentation</a>
+
+  <main>
+    <section class="hero" id="top" aria-labelledby="site-title">
+      <canvas id="crowd-field" aria-hidden="true"></canvas>
+      <div class="hero-grain" aria-hidden="true"></div>
+      <h1 id="site-title">SynthoCrowd</h1>
+      <span class="hero-cue" aria-hidden="true"></span>
+    </section>
+
+    <section class="chapter purpose" id="purpose" aria-labelledby="purpose-title">
+      <div class="chapter-copy reveal">
+        <h2 id="purpose-title">Des agents simulés testent votre interface web.</h2>
+        <p>Testez davantage de parcours à moindre coût avec des agents IA aux profils personnalisables. Donnez-leur une mission sur votre site, puis retrouvez les blocages, les points forts et les améliorations repérés dans un rapport clair.</p>
+      </div>
+      <div class="system-layout reveal">
+        <div class="flow-menu" role="group" aria-label="Étapes de SynthoCrowd">
+          <button type="button" class="flow-button active" data-flow="mission" aria-pressed="true"><span>Mission</span><i aria-hidden="true">↗</i></button>
+          <button type="button" class="flow-button" data-flow="personas" aria-pressed="false"><span>Personas</span><i aria-hidden="true">↗</i></button>
+          <button type="button" class="flow-button" data-flow="parcours" aria-pressed="false"><span>Parcours</span><i aria-hidden="true">↗</i></button>
+          <button type="button" class="flow-button" data-flow="resultats" aria-pressed="false"><span>Résultats</span><i aria-hidden="true">↗</i></button>
+        </div>
+        <div class="flow-display" id="flow-display" data-mode="mission" aria-live="polite">
+          <div class="flow-stage" aria-hidden="true">
+            <div class="flow-stage-head"><span>TEST / 001</span><span>INTERFACE WEB</span></div>
+            <div class="flow-source"><span class="flow-source-icon">↗</span><div><small>MISSION</small><strong>Votre site web</strong></div><span class="flow-source-tail"></span></div>
+            <div class="flow-lanes">
+              <div class="flow-lane"><span>01</span><div class="flow-track"><i></i><i></i><i></i></div><small>EXPLORER</small></div>
+              <div class="flow-lane"><span>02</span><div class="flow-track"><i></i><i></i><i></i></div><small>COMPARER</small></div>
+              <div class="flow-lane"><span>03</span><div class="flow-track"><i></i><i></i><i></i></div><small>DÉCIDER</small></div>
+            </div>
+            <div class="flow-output"><span>CONSTATS</span><div><i></i><i></i><i></i></div><b>↗</b></div>
+          </div>
+          <div class="flow-description"><span id="flow-label">MISSION</span><p id="flow-detail">Une URL et un objectif concret donnent un cap commun à tous les agents.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter builder" id="builder" aria-labelledby="builder-title">
+      <div class="section-heading reveal"><h2 id="builder-title">Une foule qui ne pense pas d’une seule façon.</h2><p>Composez des profils différents, ajustez leur aisance numérique, leur appareil et le nombre d’agents. Le test couvre plusieurs façons de chercher, comprendre et décider.</p></div>
+      <div class="builder-layout">
+        <div class="persona-selector reveal" role="group" aria-label="Explorer trois profils de démonstration">
+          <button type="button" class="persona-tile active" data-persona="0" aria-pressed="true"><span class="persona-identity">Curieux</span><small>Desktop / 8 sur 10</small><span class="persona-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="persona-tile" data-persona="1" aria-pressed="false"><span class="persona-identity">Prudent</span><small>Mobile / 5 sur 10</small><span class="persona-arrow" aria-hidden="true">↗</span></button>
+          <button type="button" class="persona-tile" data-persona="2" aria-pressed="false"><span class="persona-identity">Pressé</span><small>Mobile / 3 sur 10</small><span class="persona-arrow" aria-hidden="true">↗</span></button>
+        </div>
+        <div class="builder-screen reveal delay-1" aria-label="Aperçu interactif d’une carte persona du Builder">
+          <div class="screen-bar"><span class="screen-mark"></span><span>BUILDER</span><span class="screen-corner">◢</span></div>
+          <div class="screen-content">
+            <div class="screen-title"><span id="screen-index">01</span><strong id="screen-name">Curieux</strong><span class="screen-agent-count"><b id="screen-count">7</b> agents</span></div>
+            <div class="screen-fields"><div><small>APPAREIL</small><strong id="screen-device">Desktop</strong></div><div><small>AISANCE NUMÉRIQUE</small><strong id="screen-tech">8/10</strong></div><div><small>COMPORTEMENT</small><strong id="screen-trait">Explore plusieurs chemins</strong></div></div>
+            <div class="screen-range"><span>FAIBLE</span><div><i id="screen-meter"></i></div><span>ÉLEVÉE</span></div>
+            <div class="screen-mini-crowd" id="screen-crowd" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter paths" id="paths" aria-labelledby="paths-title">
+      <div class="paths-copy reveal"><h2 id="paths-title">Même mission.<br>Parcours différents.</h2><p>Chaque agent navigue sur l’interface, choisit des actions et rencontre ses propres frictions. Les sessions restent séparées pour comprendre où les comportements divergent.</p><button type="button" id="replay-paths" class="replay-button">Revoir les trajets <span aria-hidden="true">↗</span></button></div>
+      <div class="paths-board reveal delay-1" id="paths-board">
+        <div class="paths-labels"><span>POINT DE DÉPART</span><span>SESSIONS INDIVIDUELLES</span></div>
+        <svg id="paths-svg" viewBox="0 0 850 480" role="img" aria-label="Trois agents partent de la même mission et suivent trois parcours distincts">
+          <defs><linearGradient id="routeA" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#6ee0eb"/><stop offset="1" stop-color="#5da8d9"/></linearGradient><linearGradient id="routeB" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#6ee0eb"/><stop offset="1" stop-color="#b29af2"/></linearGradient></defs>
+          <path class="route-guide" d="M95 242 C230 242 290 90 470 95 S660 126 757 97"/>
+          <path class="route-guide" d="M95 242 C255 242 313 240 470 240 S660 225 757 241"/>
+          <path class="route-guide" d="M95 242 C230 242 291 395 470 391 S660 351 757 385"/>
+          <path class="route route-one" id="route-one" d="M95 242 C230 242 290 90 470 95 S660 126 757 97"/>
+          <path class="route route-two" id="route-two" d="M95 242 C255 242 313 240 470 240 S660 225 757 241"/>
+          <path class="route route-three" id="route-three" d="M95 242 C230 242 291 395 470 391 S660 351 757 385"/>
+          <circle class="route-origin" cx="95" cy="242" r="18"/>
+          <circle class="route-dot" data-route-dot="0" cx="95" cy="242" r="8"/>
+          <circle class="route-dot" data-route-dot="1" cx="95" cy="242" r="8"/>
+          <circle class="route-dot" data-route-dot="2" cx="95" cy="242" r="8"/>
+          <circle class="route-end" cx="757" cy="97" r="10"/><circle class="route-end" cx="757" cy="241" r="10"/><circle class="route-end" cx="757" cy="385" r="10"/>
+        </svg>
+        <div class="paths-foot"><span>EXPLORATION</span><span>ACTIONS</span><span>CONSTATS</span></div>
+      </div>
+    </section>
+
+    <section class="chapter results" id="results" aria-labelledby="results-title">
+      <div class="section-heading reveal"><h2 id="results-title">Des preuves, pas seulement un score.</h2><p>La page de résultats relie chaque session à son parcours, aux constats générés, à la vidéo lorsqu’elle est disponible et à un export PDF.</p></div>
+      <div class="results-layout">
+        <div class="results-image reveal"><div class="screen-bar"><span class="screen-mark"></span><span>RÉSULTATS / INTERFACE DE L’OUTIL</span><span class="screen-corner">◢</span></div><img src="./assets/results.jpg" alt="Capture de la page de résultats SynthoCrowd, présentée avec des données fictives" loading="lazy" width="1265" height="712"></div>
+        <div class="evidence-list reveal delay-1"><div><span class="evidence-icon">↗</span><strong>Parcours</strong><p>Une lecture par agent, sans mélanger les sessions.</p></div><div><span class="evidence-icon">◌</span><strong>Vidéo</strong><p>La capture du navigateur, si l’enregistrement est disponible.</p></div><div><span class="evidence-icon">≡</span><strong>Rapport</strong><p>Frictions, points forts et améliorations proposées.</p></div><div><span class="evidence-icon">↓</span><strong>PDF</strong><p>Un document exportable pour partager les résultats.</p></div></div>
+      </div>
+      <p class="example-caption reveal">La capture montre des données d’exemple.</p>
+    </section>
+
+    <section class="chapter closing" id="capture" aria-labelledby="capture-title">
+      <div class="closing-copy reveal"><h2 id="capture-title">Voir le parcours complet.</h2><p>Cette vidéo présente le Builder, les sessions puis un exemple fictif de rapport textuel avec bugs, points forts et priorités.</p><div class="closing-links"><a href="https://github.com/Evanguennou29/Syntho-Crowd" target="_blank" rel="noopener noreferrer">Code source <span aria-hidden="true">↗</span></a><a href="#top">Retour en haut <span aria-hidden="true">↑</span></a></div></div>
+      <div class="video-frame reveal delay-1"><div class="screen-bar"><span class="screen-mark"></span><span>CAPTURE / 01:07</span><span class="screen-corner">MP4</span></div><video controls preload="none" playsinline poster="./assets/results.jpg" aria-label="Vidéo de démonstration SynthoCrowd avec données fictives"><source src="./assets/synthocrowd-demo.mp4" type="video/mp4">Votre navigateur ne prend pas en charge la lecture vidéo.</video><span class="video-note">Données d’exemple · vidéo silencieuse</span></div>
+    </section>
+  </main>
+</body>
+</html>
