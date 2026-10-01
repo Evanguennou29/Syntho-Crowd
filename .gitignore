@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-verify/
 /out/
 
 # production
@@ -39,3 +40,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local credentials and generated recordings
+/service-account-key.json
+/syntho-app-final-*.json
+/temp_videos/
+/work/
+/test-agent.ts
