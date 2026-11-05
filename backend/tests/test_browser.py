@@ -25,7 +25,7 @@ class Website(BaseHTTPRequestHandler):
 
 
 def test_real_browser_actions_evidence_video_and_persona_isolation(tmp_path, monkeypatch):
-    from app.browser import BrowserSession
+    from app.browser import BrowserSession, SessionStopped
     from app.config import get_settings
 
     # Only this local fixture bypasses production URL policy; the model/vision is stubbed.
@@ -55,6 +55,10 @@ def test_real_browser_actions_evidence_video_and_persona_isolation(tmp_path, mon
         assert browser.outcome == "achieved"
         second.open()
         assert "Saved" not in second.perform("observe")["text"]
+        second.progress = lambda _logs: False
+        with pytest.raises(SessionStopped):
+            second.perform("observe")
+        assert not second.browser.is_connected()
     finally:
         browser.close()
         second.close()

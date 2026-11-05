@@ -2,6 +2,7 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Lock
 
 from playwright.sync_api import sync_playwright
 
@@ -26,6 +27,8 @@ class BrowserSession:
         self.actions = 0
         self.started = time.monotonic()
         self.executor = ThreadPoolExecutor(max_workers=1)
+        self.close_lock = Lock()
+        self.closed = False
         self.elements = {}
         self.video_path = None
         self.pw = self.browser = self.context = self.page = None
@@ -65,8 +68,10 @@ class BrowserSession:
 
     def check(self):
         if not self.progress(self.logs):
+            self.close()
             raise SessionStopped("Session annulée ou reprise par un autre worker.")
         if time.monotonic() - self.started > self.settings.session_timeout:
+            self.close()
             raise TimeoutError("Durée maximale de session atteinte.")
 
     def perform(self, action: str, element_id: int = 0, value: str = "") -> dict:
@@ -176,6 +181,10 @@ class BrowserSession:
             return response.text or "Aucune observation visuelle disponible."
 
     def close(self):
+        with self.close_lock:
+            if self.closed:
+                return
+            self.closed = True
         try:
             self.executor.submit(self._close).result(timeout=30)
         finally:
