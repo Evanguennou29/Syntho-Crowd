@@ -1,0 +1,97 @@
+name: V2 checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: syntho_test
+          POSTGRES_USER: syntho
+          POSTGRES_PASSWORD: test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U syntho -d syntho_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://syntho:test-only@localhost:5432/syntho_test
+      RUN_BROWSER_TESTS: '1'
+      CREWAI_TELEMETRY_DISABLED: 'true'
+      OTEL_SDK_DISABLED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.7'
+          python-version: '3.12'
+      - run: uv sync --locked --extra dev --extra worker
+        working-directory: backend
+      - run: uv run --locked --extra dev --extra worker playwright install --with-deps chromium
+        working-directory: backend
+      - run: uv run --locked --extra dev --extra worker ruff check app tests
+        working-directory: backend
+      - run: uv run --locked --extra dev --extra worker pytest -q
+        working-directory: backend
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  containers:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+psycopg://syntho:test-only@postgres:5432/syntho_ci
+      API_TOKEN: ci-only-token-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      APP_PASSWORD: ci-only-password-xxxxxxxxxxxxxxxx
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+      GEMINI_API_KEY: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose and build all images
+        run: |
+          docker compose config --quiet
+          docker compose build
+      - name: Start isolated PostgreSQL and application
+        run: |
+          docker compose create redis
+          docker run -d --name postgres --network synthocrowd_default \
+            -e POSTGRES_DB=syntho_ci -e POSTGRES_USER=syntho -e POSTGRES_PASSWORD=test-only \
+            --health-cmd='pg_isready -U syntho -d syntho_ci' --health-interval=2s \
+            --health-retries=20 postgres:16-alpine
+          for attempt in $(seq 1 30); do
+            if docker exec postgres pg_isready -U syntho -d syntho_ci; then break; fi
+            sleep 2
+          done
+          docker compose up -d --wait --wait-timeout 180
+      - name: Check access gate and proxy
+        run: |
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/)" = 401
+          curl --fail --user "admin:$APP_PASSWORD" http://localhost:3000/ > /dev/null
+          curl --fail --user "admin:$APP_PASSWORD" http://localhost:3000/api/backend/campaigns
+      - name: Check Chromium sandbox in the worker image
+        run: |
+          docker compose exec -T worker python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); b=p.chromium.launch(chromium_sandbox=True); page=b.new_page(); page.set_content("<title>Smoke</title>"); assert page.title()=="Smoke"; b.close(); p.stop()'
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --tail=100

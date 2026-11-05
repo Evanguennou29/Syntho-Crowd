@@ -1,0 +1,95 @@
+name: synthocrowd
+
+x-backend-env: &backend-env
+  DATABASE_URL: ${DATABASE_URL:?Configure DATABASE_URL}
+  API_TOKEN: ${API_TOKEN:?Configure API_TOKEN}
+  REDIS_URL: redis://redis:6379/0
+  SUPABASE_URL: ${SUPABASE_URL:?Configure SUPABASE_URL}
+  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?Configure storage credentials}
+  STORAGE_BUCKET: ${STORAGE_BUCKET:-sc-artifacts-v2}
+  TARGET_ALLOWED_HOSTS: ${TARGET_ALLOWED_HOSTS:-}
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: [redis-server, --appendonly, 'yes', --appendfsync, everysec]
+    volumes: [redis-data:/data]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.api
+    environment: *backend-env
+    command: [python, -m, app.migrate]
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.api
+    environment:
+      <<: *backend-env
+      MAX_CAMPAIGN_RUNS: ${MAX_CAMPAIGN_RUNS:-100}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -c, 'import os,urllib.request; r=urllib.request.Request("http://localhost:8000/health/ready",headers={"Authorization":"Bearer "+os.environ["API_TOKEN"]}); urllib.request.urlopen(r,timeout=5)']
+      interval: 15s
+      timeout: 8s
+      retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.worker
+    environment:
+      <<: *backend-env
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Configure GEMINI_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-gemini/gemini-2.5-flash}
+      MAX_STEPS: ${MAX_STEPS:-40}
+      SESSION_TIMEOUT: ${SESSION_TIMEOUT:-600}
+      MAX_RPM: ${MAX_RPM:-15}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    init: true
+    shm_size: 1gb
+    security_opt: [seccomp=./docker/seccomp_profile.json]
+    stop_grace_period: 16m
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.api
+    environment: *backend-env
+    command: [celery, -A, 'app.tasks:celery_app', beat, --loglevel=INFO, --schedule=/tmp/celerybeat-schedule]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      BACKEND_URL: http://api:8000
+      API_TOKEN: ${API_TOKEN:?Configure API_TOKEN}
+      APP_USERNAME: ${APP_USERNAME:-admin}
+      APP_PASSWORD: ${APP_PASSWORD:?Configure APP_PASSWORD}
+    ports: ['127.0.0.1:${APP_PORT:-3000}:3000']
+    depends_on:
+      api: {condition: service_healthy}
+    restart: unless-stopped
+
+volumes:
+  redis-data:
