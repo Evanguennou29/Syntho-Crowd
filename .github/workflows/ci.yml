@@ -36,6 +36,18 @@ jobs:
         working-directory: backend
       - run: uv run --locked --extra dev --extra worker playwright install --with-deps chromium
         working-directory: backend
+      - name: Allow the test browser to create its sandbox namespaces
+        run: |
+          # Narrow AppArmor exception for the downloaded CI binary, as documented by Chromium.
+          # The browser sandbox remains enabled; no global sysctl is changed.
+          sudo tee /etc/apparmor.d/synthocrowd-ci-chromium > /dev/null <<EOF
+          abi <abi/4.0>,
+          include <tunables/global>
+          profile synthocrowd-ci-chromium $HOME/.cache/ms-playwright/**/chrome-headless-shell flags=(unconfined) {
+            userns,
+          }
+          EOF
+          sudo apparmor_parser -r /etc/apparmor.d/synthocrowd-ci-chromium
       - run: uv run --locked --extra dev --extra worker ruff check app tests
         working-directory: backend
       - run: uv run --locked --extra dev --extra worker pytest -q
